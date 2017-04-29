@@ -26,16 +26,21 @@ class ImageGetter:
     def release(self):
         return self.capture.release()
 
+rec = cv2.VideoWriter('out.divx', cv2.VideoWriter_fourcc(*'DIVX'), 20.0, (640, 360))
 cap = ImageGetter()
 cap.start()
 time.sleep(1)
 try:
     while True:
         img = cap.getFrame()
-        img = img[:, 185:455]
-        img = cv2.resize(img, (120, 160))
+        try:
+            test_img = img[:,:]
+        except TypeError:
+            continue
+        rec.write(img)
         cv2.imshow("video", img)
         cv2.waitKey(1)
 except KeyboardInterrupt:
-    cap.release()
+    rec.release()
+    pass
 

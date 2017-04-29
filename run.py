@@ -3,6 +3,25 @@ import flight_cam as flight
 import cv2, fcntl, multiprocessing, os, select, socket, struct, sys
 import tempfile, threading, time, thread, signal, subprocess, termios
 
+def high_flight(drone):
+    NDC = drone.NavDataCount
+    drone.setSpeed(1)
+    drone.takeoff()
+    while ((drone.NavData['altitude'][3] / 10) < 1000):
+        while NDC == drone.NavDataCount: time.sleep(0.001)
+        NDC = drone.NavDataCount
+        drone.moveUp()
+        time.sleep(0.3)
+
+def hover_alt(drone):
+    drone.setSpeed(1)
+    while ((drone.NavData['altitude'][3] / 10) > 100):
+        drone.moveDown()
+        time.sleep(0.3)
+
+def test_alt(drone):
+    print (drone.NavData['altitude'][3] / 10)
+
 def simple_flight(drone):
     drone.takeoff()
     time.sleep(5)
@@ -18,32 +37,41 @@ def simple_flight(drone):
     drone.land()
 
 def drone_act(drone, in_list, com):
-    if com == "z":
+    if com == 'z':
         drone.land()
         in_list.remove(file)
-    elif com == "s":
+    elif com == 's':
         simple_flight(drone)
+    elif com == 'h':
+        high_flight(drone)
+    elif com == 'd':
+        hover_alt(drone)
+    elif com == 't':
+        test_alt(drone)
     return in_list
 
 
 def print_bat(drone):
     bat = drone.getBattery()
-    drone.printBlue("Battery: {}% {}\n\n".format(bat[0], bat[1]))
+    drone.printBlue('Battery: {}% {}\n\n'.format(bat[0], bat[1]))
 
 
 def drone_init(drone):
     drone.startup()
     drone.reset()
-    while drone.getBattery()[0] == -1: time.sleep(0.01)
     time.sleep(0.1)
-    print_bat(drone)
     drone.useDemoMode(False)
+    #drone.useDemoMode(True)
     drone.setConfigAllID()
     drone.groundCam()
     drone.midVideo()
     drone.sdVideo()
-    CDC = drone.ConfigDataCount
+    drone.addNDpackage(['altitude'])
+    CDC, NDC = drone.ConfigDataCount, drone.NavDataCount
     while CDC == drone.ConfigDataCount: time.sleep(0.0001)
+    while NDC == drone.NavDataCount: time.sleep(0.0001)
+    while drone.getBattery()[0] == -1: time.sleep(0.01)
+    print_bat(drone)
 
 
 # init
